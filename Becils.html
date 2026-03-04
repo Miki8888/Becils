@@ -279,7 +279,7 @@ body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:
       <div class="card" style="text-align:center;padding:24px">
         <div style="font-size:36px;margin-bottom:10px">₿</div>
         <div style="font-weight:800;font-size:18px;background:linear-gradient(135deg,#F59E0B,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">BECILS Crypto</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v2.8 · Datos locales</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v2.9 · Datos locales</div>
         <div style="font-size:11px;color:var(--text3);margin-top:12px;font-family:'JetBrains Mono'" id="db-stats">Sin datos</div>
       </div>
     </div>
@@ -520,18 +520,31 @@ function renderHome(){
   const divRecent=document.getElementById('div-recent');
   const divStaking=document.getElementById('div-staking');
   const sEl=document.getElementById('home-staking');
-  if(!allOps.length){rEl.innerHTML='<div class="empty"><div class="icon">₿</div><h3>Sin datos</h3><p>Usa el botón + para añadir registros<br>o importa tu Excel desde Ajustes</p></div>';divRecent.style.display='none';divStaking.style.display='none';sEl.innerHTML='';return;}
-  divRecent.style.display='';
-  rEl.innerHTML='<div class="card" style="padding:6px 14px">'+allOps.map(op=>{const n=getDivNombre(op.divId)||op.divId;const m=cm(n);const isBuy=op.tipo==='compra';return`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)"><div class="crypto-icon" style="background:${m.c}22;color:${m.c};font-size:16px">${m.e}</div><div style="flex:1"><div style="font-weight:700;font-size:13px">${n}</div><div style="font-size:11px;color:var(--text2)">${fmtDS(op.fecha)} · ${getExchName(op.exchId)}</div></div><div style="text-align:right"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:${isBuy?'var(--red)':'var(--green)'}">${isBuy?'-':'+'}${fmt(op.amount,2)} ${op.moneda}</div><span class="badge ${isBuy?'badge-buy':'badge-sell'}">${isBuy?'COMPRA':'VENTA'}</span></div></div>`;}).join('')+'</div>';
-  const actStk=staking.filter(s=>s.activo==='true'||s.activo===true||s.activo==='TRUE').slice(0,4);
-  if(!actStk.length){divStaking.style.display='none';sEl.innerHTML='';return;}
-  divStaking.style.display='';
-  sEl.innerHTML=actStk.map(s=>{const n=getDivNombre(s.divisaId);const m=cm(n);return`<div class="staking-card"><div class="staking-icon">${m.e}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">${n}</div><div style="font-size:12px;color:var(--text2);margin-top:2px">${getExchName(s.exchangeId)} · desde ${fmtDS(s.fechaInicio)}</div><div class="staking-bar"><div class="staking-fill" style="width:100%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:4px">${s.obs||''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px"><div style="font-family:'JetBrains Mono';font-size:14px;font-weight:700;color:var(--purple)">+${fmt(s.ganancias,4)}</div><div style="font-size:10px;color:${s.fechaFinal?'var(--amber)':'var(--green)'}">● ${s.fechaFinal?fmtDS(s.fechaFinal):'FLEXIBLE'}</div><button onclick="openEdit('staking','${s.id}')" style="font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--card2);color:var(--text2);font-family:'Syne';font-weight:700;cursor:pointer">✏️ Editar</button></div></div>`;}).join('');
+  if(!allOps.length){rEl.innerHTML='<div class="empty"><div class="icon">₿</div><h3>Sin datos</h3><p>Usa el botón + para añadir registros<br>o importa tu Excel desde Ajustes</p></div>';divRecent.style.display='none';}
+  else{
+    divRecent.style.display='';
+    rEl.innerHTML='<div class="card" style="padding:6px 14px">'+allOps.map(op=>{const n=getDivNombre(op.divId)||op.divId;const m=cm(n);const isBuy=op.tipo==='compra';return`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)"><div class="crypto-icon" style="background:${m.c}22;color:${m.c};font-size:16px">${m.e}</div><div style="flex:1"><div style="font-weight:700;font-size:13px">${n}</div><div style="font-size:11px;color:var(--text2)">${fmtDS(op.fecha)} · ${getExchName(op.exchId)}</div></div><div style="text-align:right"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:${isBuy?'var(--red)':'var(--green)'}">${isBuy?'-':'+'}${fmt(op.amount,2)} ${op.moneda}</div><span class="badge ${isBuy?'badge-buy':'badge-sell'}">${isBuy?'COMPRA':'VENTA'}</span></div></div>`;}).join('')+'</div>';
+  }
+  const actStk=staking.filter(s=>s.activo==='true'||s.activo===true||s.activo==='TRUE').slice(0,6);
+  if(!actStk.length){divStaking.style.display='none';sEl.innerHTML='';}
+  else{
+    divStaking.style.display='';
+    sEl.innerHTML=actStk.map(s=>{const n=getDivNombre(s.divisaId);const m=cm(n);return`<div class="staking-card"><div class="staking-icon">${m.e}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">${n}</div><div style="font-size:12px;color:var(--text2);margin-top:2px">${getExchName(s.exchangeId)} · desde ${fmtDS(s.fechaInicio)}</div><div class="staking-bar"><div class="staking-fill" style="width:100%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:4px">${s.obs||''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px"><div style="font-family:'JetBrains Mono';font-size:14px;font-weight:700;color:var(--purple)">+${fmt(s.ganancias,4)}</div><div style="font-size:10px;color:${s.fechaFinal?'var(--amber)':'var(--green)'}">● ${s.fechaFinal?fmtDS(s.fechaFinal):'FLEXIBLE'}</div><button onclick="openEdit('staking','${s.id}')" style="font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--card2);color:var(--text2);font-family:'Syne';font-weight:700;cursor:pointer">✏️ Editar</button></div></div>`;}).join('');
+  }
 }
 function renderPortfolio(){
-  const divisas=DB.divisas(),compras=DB.compras(),staking=DB.staking(),traspasos=DB.traspasos();
-  const withStock=divisas.filter(d=>d.stock>0).sort((a,b)=>b.stock-a.stock);
-  const noStock=divisas.filter(d=>!d.stock||d.stock<=0);
+  const divisas=DB.divisas(),compras=DB.compras(),ventas=DB.ventas(),staking=DB.staking(),traspasos=DB.traspasos();
+  // Calcular stock real por divisa: cantidad comprada - cantidad vendida
+  function calcStock(divId){
+    const totalComprado=compras.filter(c=>c.divisaId===divId).reduce((s,c)=>s+(c.cantidad||0),0);
+    const totalVendido=ventas.filter(v=>v.divisaId===divId).reduce((s,v)=>s+(v.cantidad||0),0);
+    const real=totalComprado-totalVendido;
+    // Si no hay compras/ventas, confiar en el stock del Excel
+    if(totalComprado===0){const d=divisas.find(d=>d.id===divId);return d?d.stock:0;}
+    return Math.max(real,0);
+  }
+  const withStock=divisas.filter(d=>calcStock(d.id)>0).sort((a,b)=>calcStock(b.id)-calcStock(a.id));
+  const noStock=divisas.filter(d=>calcStock(d.id)<=0);
   document.getElementById('port-count').textContent=withStock.length;
   document.getElementById('port-total').textContent=divisas.length;
   function getCurrentExchange(divId){
@@ -543,9 +556,10 @@ function renderPortfolio(){
   }
   function buildCard(d,faded=false){
     const meta=cm(d.nombre);const myBuys=compras.filter(c=>c.divisaId===d.id&&c.costeCompra>0);
+    const stockReal=calcStock(d.id);
     const exchNow=getCurrentExchange(d.id);
     const actStk=staking.filter(s=>s.divisaId===d.id&&(s.activo==='true'||s.activo===true));
-    return`<div class="asset-card" style="${faded?'opacity:0.45':''}" onclick='showAssetDetail(${JSON.stringify({id:d.id,nombre:d.nombre,stock:d.stock})})'><div class="crypto-icon" style="background:${meta.c}22;color:${meta.c};font-size:${meta.e.length>1?'16':'22'}px">${meta.e}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">${d.nombre}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${exchNow} ${actStk.length?'<span class="badge badge-stake">STAKING</span>':''}</div></div><div style="text-align:right"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700">${fmtStock(d.stock)}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">${myBuys.length} compras</div></div></div>`;
+    return`<div class="asset-card" style="${faded?'opacity:0.45':''}" onclick='showAssetDetail(${JSON.stringify({id:d.id,nombre:d.nombre,stock:d.stock})})'><div class="crypto-icon" style="background:${meta.c}22;color:${meta.c};font-size:${meta.e.length>1?'16':'22'}px">${meta.e}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">${d.nombre}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${exchNow} ${actStk.length?'<span class="badge badge-stake">STAKING</span>':''}</div></div><div style="text-align:right"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700">${fmtStock(stockReal)}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">${myBuys.length} compras</div></div></div>`;
   }
   document.getElementById('portfolio-list').innerHTML=withStock.length?withStock.map(d=>buildCard(d)).join(''):'<div class="empty"><div class="icon">💼</div><h3>Sin activos con saldo</h3><p>Importa tu Excel o usa + para añadir divisas</p></div>';
   document.getElementById('portfolio-zero').innerHTML=noStock.slice(0,25).map(d=>buildCard(d,true)).join('');
