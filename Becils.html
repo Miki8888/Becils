@@ -279,7 +279,7 @@ body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:
       <div class="card" style="text-align:center;padding:24px">
         <div style="font-size:36px;margin-bottom:10px">₿</div>
         <div style="font-weight:800;font-size:18px;background:linear-gradient(135deg,#F59E0B,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">BECILS Crypto</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v2.9 · Datos locales</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v3.0 · Datos locales</div>
         <div style="font-size:11px;color:var(--text3);margin-top:12px;font-family:'JetBrains Mono'" id="db-stats">Sin datos</div>
       </div>
     </div>
@@ -534,17 +534,22 @@ function renderHome(){
 }
 function renderPortfolio(){
   const divisas=DB.divisas(),compras=DB.compras(),ventas=DB.ventas(),staking=DB.staking(),traspasos=DB.traspasos();
-  // Calcular stock real por divisa: cantidad comprada - cantidad vendida
-  function calcStock(divId){
-    const totalComprado=compras.filter(c=>c.divisaId===divId).reduce((s,c)=>s+(c.cantidad||0),0);
-    const totalVendido=ventas.filter(v=>v.divisaId===divId).reduce((s,v)=>s+(v.cantidad||0),0);
-    const real=totalComprado-totalVendido;
-    // Si no hay compras/ventas, confiar en el stock del Excel
-    if(totalComprado===0){const d=divisas.find(d=>d.id===divId);return d?d.stock:0;}
-    return Math.max(real,0);
-  }
-  const withStock=divisas.filter(d=>calcStock(d.id)>0).sort((a,b)=>calcStock(b.id)-calcStock(a.id));
-  const noStock=divisas.filter(d=>calcStock(d.id)<=0);
+  // Calcular stock real una sola vez para todas las divisas
+  const stockMap={};
+  divisas.forEach(d=>{
+    const comprado=compras.filter(c=>c.divisaId===d.id).reduce((s,c)=>s+(parseFloat(c.cantidad)||0),0);
+    const vendido=ventas.filter(v=>v.divisaId===d.id).reduce((s,v)=>s+(parseFloat(v.cantidad)||0),0);
+    if(comprado>0){
+      // Tenemos datos de compras: calcular
+      const real=comprado-vendido;
+      stockMap[d.id]=real>0.000001?real:0;
+    } else {
+      // Sin datos de compras: usar stock del Excel
+      stockMap[d.id]=parseFloat(d.stock)||0;
+    }
+  });
+  const withStock=divisas.filter(d=>stockMap[d.id]>0).sort((a,b)=>stockMap[b.id]-stockMap[a.id]);
+  const noStock=divisas.filter(d=>stockMap[d.id]<=0);
   document.getElementById('port-count').textContent=withStock.length;
   document.getElementById('port-total').textContent=divisas.length;
   function getCurrentExchange(divId){
@@ -555,11 +560,12 @@ function renderPortfolio(){
     return'—';
   }
   function buildCard(d,faded=false){
-    const meta=cm(d.nombre);const myBuys=compras.filter(c=>c.divisaId===d.id&&c.costeCompra>0);
-    const stockReal=calcStock(d.id);
+    const meta=cm(d.nombre);
+    const myBuys=compras.filter(c=>c.divisaId===d.id&&c.costeCompra>0);
+    const stockReal=stockMap[d.id];
     const exchNow=getCurrentExchange(d.id);
     const actStk=staking.filter(s=>s.divisaId===d.id&&(s.activo==='true'||s.activo===true));
-    return`<div class="asset-card" style="${faded?'opacity:0.45':''}" onclick='showAssetDetail(${JSON.stringify({id:d.id,nombre:d.nombre,stock:d.stock})})'><div class="crypto-icon" style="background:${meta.c}22;color:${meta.c};font-size:${meta.e.length>1?'16':'22'}px">${meta.e}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">${d.nombre}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${exchNow} ${actStk.length?'<span class="badge badge-stake">STAKING</span>':''}</div></div><div style="text-align:right"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700">${fmtStock(stockReal)}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">${myBuys.length} compras</div></div></div>`;
+    return`<div class="asset-card" style="${faded?'opacity:0.45':''}" onclick='showAssetDetail(${JSON.stringify({id:d.id,nombre:d.nombre,stockReal})})'><div class="crypto-icon" style="background:${meta.c}22;color:${meta.c};font-size:${meta.e.length>1?'16':'22'}px">${meta.e}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">${d.nombre}</div><div style="font-size:11px;color:var(--text2);margin-top:2px">${exchNow} ${actStk.length?'<span class="badge badge-stake">STAKING</span>':''}</div></div><div style="text-align:right"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700">${fmtStock(stockReal)}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">${myBuys.length} compras</div></div></div>`;
   }
   document.getElementById('portfolio-list').innerHTML=withStock.length?withStock.map(d=>buildCard(d)).join(''):'<div class="empty"><div class="icon">💼</div><h3>Sin activos con saldo</h3><p>Importa tu Excel o usa + para añadir divisas</p></div>';
   document.getElementById('portfolio-zero').innerHTML=noStock.slice(0,25).map(d=>buildCard(d,true)).join('');
@@ -568,7 +574,8 @@ function showAssetDetail(d){
   const compras=DB.compras().filter(c=>c.divisaId===d.id);const ventas=DB.ventas().filter(v=>v.divisaId===d.id);const stk=DB.staking().filter(s=>s.divisaId===d.id);
   const totalInv=compras.reduce((s,c)=>s+(c.costeCompra||0),0);const totalRec=ventas.filter(v=>v.operacion==='VENTA'||!v.operacion).reduce((s,v)=>s+(v.totalOperacion||0),0);const totalGan=ventas.reduce((s,v)=>s+(v.ganancia||0),0);
   const meta=cm(d.nombre);
-  showDetail(`${meta.e} ${d.nombre}`,[['Stock actual',fmtStock(d.stock),''],['Total compras',compras.length+' ops','color:var(--text2)'],['Total invertido',fmt(totalInv,2)+' €','color:var(--amber)'],['Total ventas',ventas.length+' ops','color:var(--text2)'],['Recuperado',fmt(totalRec,2)+' $',totalRec>0?'color:var(--green)':''],['Ganancia',(totalGan>=0?'+':'')+fmt(totalGan,2)+' $',totalGan>=0?'color:var(--green)':'color:var(--red)'],['Staking',stk.length+' registro(s)','color:var(--purple)']]);
+  const stockMostrar=d.stockReal!=null?d.stockReal:(d.stock||0);
+  showDetail(`${meta.e} ${d.nombre}`,[['Stock actual',fmtStock(stockMostrar),''],['Total compras',compras.length+' ops','color:var(--text2)'],['Total invertido',fmt(totalInv,2)+' €','color:var(--amber)'],['Total ventas',ventas.length+' ops','color:var(--text2)'],['Recuperado',fmt(totalRec,2)+' $',totalRec>0?'color:var(--green)':''],['Ganancia',(totalGan>=0?'+':'')+fmt(totalGan,2)+' $',totalGan>=0?'color:var(--green)':'color:var(--red)'],['Staking',stk.length+' registro(s)','color:var(--purple)']]);
 }
 let opsFilter='all';
 function setOpsFilter(f,el){opsFilter=f;document.querySelectorAll('#ops-filters .filter-chip').forEach(c=>c.classList.remove('active'));if(el)el.classList.add('active');renderOps();}
