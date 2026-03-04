@@ -199,11 +199,10 @@ body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:
           <div class="hero-badges" id="hero-badges"></div>
         </div>
       </div>
-      <div class="stats-grid">
-        <div class="stat-card stat-green"><div class="label">Recuperado Ventas</div><div class="value" id="s-recuperado">—</div><div class="unit">Total operaciones</div></div>
-        <div class="stat-card stat-amber"><div class="label">Balance Neto</div><div class="value" id="s-balance">—</div><div class="unit">Ventas − Invertido</div></div>
-        <div class="stat-card stat-purple"><div class="label">Staking Rewards</div><div class="value" id="s-staking">—</div><div class="unit">Ganancias acumuladas</div></div>
-        <div class="stat-card stat-blue"><div class="label">Operaciones</div><div class="value" id="s-ops">—</div><div class="unit">Compras + Ventas</div></div>
+      <div class="stats-grid" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="stat-card stat-green"><div class="label">Recuperado</div><div class="value" id="s-recuperado">—</div><div class="unit">Total ventas</div></div>
+        <div class="stat-card stat-amber"><div class="label">Balance</div><div class="value" id="s-balance">—</div><div class="unit">Ventas − Fiat</div></div>
+        <div class="stat-card stat-blue"><div class="label">Operaciones</div><div class="value" id="s-ops">—</div><div class="unit">Compras+Ventas</div></div>
       </div>
       <div class="divider" id="div-recent" style="display:none">Actividad reciente</div>
       <div id="home-recent"></div>
@@ -219,9 +218,13 @@ body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:
       <div class="divider">Sin saldo (historial)</div><div id="portfolio-zero"></div>
     </div>
     <div id="sec-ops" class="section">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-top:4px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-top:4px">
         <h2 style="font-size:18px;font-weight:800">Historial</h2>
         <div style="background:var(--amber-dim);color:var(--amber);font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;font-family:'JetBrains Mono'" id="ops-count">0</div>
+      </div>
+      <div style="position:relative;margin-bottom:10px">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none">🔍</span>
+        <input id="ops-search" type="text" placeholder="Buscar divisa..." oninput="renderOps()" style="width:100%;padding:10px 12px 10px 36px;background:var(--card2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Syne';font-size:14px;-webkit-appearance:none;transition:border-color 0.2s" onfocus="this.style.borderColor='var(--amber)'" onblur="this.style.borderColor='var(--border)'">
       </div>
       <div class="filter-bar" id="ops-filters">
         <div class="filter-chip active" onclick="setOpsFilter('all',this)">Todas</div>
@@ -245,7 +248,6 @@ body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:
       <div class="chart-card"><div class="chart-title">📈 Acumulado invertido en el tiempo</div><div class="chart-wrap"><canvas id="chart-acum"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">💹 P&amp;L por operación de venta ($)</div><div class="chart-wrap" style="height:220px"><canvas id="chart-pnl"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">🍩 Distribución del portfolio</div><div class="chart-wrap" style="height:240px"><canvas id="chart-portfolio"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">🏦 Compras por exchange</div><div class="chart-wrap" style="height:220px"><canvas id="chart-exchange"></canvas></div></div>
     </div>
     <div id="sec-settings" class="section">
       <div style="font-size:18px;font-weight:800;margin-bottom:12px;padding-top:4px">Ajustes</div>
@@ -277,7 +279,7 @@ body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:
       <div class="card" style="text-align:center;padding:24px">
         <div style="font-size:36px;margin-bottom:10px">₿</div>
         <div style="font-weight:800;font-size:18px;background:linear-gradient(135deg,#F59E0B,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">BECILS Crypto</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v2.4 · Datos locales</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v2.5 · Datos locales</div>
         <div style="font-size:11px;color:var(--text3);margin-top:12px;font-family:'JetBrains Mono'" id="db-stats">Sin datos</div>
       </div>
     </div>
@@ -505,14 +507,13 @@ function renderHome(){
   const totalFiat=gastos.reduce((s,g)=>s+(g.euros||0),0);
   const ventasReal=ventas.filter(v=>v.operacion==='VENTA'||!v.operacion||v.operacion==='');
   const totalRec=ventasReal.reduce((s,v)=>s+(v.totalOperacion||0),0);
-  const totalStaking=staking.reduce((s,k)=>s+(k.ganancias||0),0);
   const balance=totalRec-totalFiat;
+  const totalStaking=staking.filter(s=>s.activo==='true'||s.activo===true||s.activo==='TRUE').length;
   document.getElementById('hero-total').textContent=fmt(totalFiat,2)+' €';
   document.getElementById('hero-sub').textContent=`${compras.length} compras · ${ventas.length} ventas · ${gastos.length} ingresos fiat`;
-  document.getElementById('hero-badges').innerHTML=`<div class="hero-badge ${balance>=0?'badge-green':'badge-red'}">${balance>=0?'▲':'▼'} ${fmt(Math.abs(balance),2)} €</div><div class="hero-badge badge-purple">⚡ ${fmt(totalStaking,4)}</div><div class="hero-badge badge-blue">🏦 ${DB.exchanges().length} exchanges</div>`;
+  document.getElementById('hero-badges').innerHTML=`<div class="hero-badge ${balance>=0?'badge-green':'badge-red'}">${balance>=0?'▲':'▼'} ${fmt(Math.abs(balance),2)} €</div><div class="hero-badge badge-purple">⚡ ${totalStaking} staking</div><div class="hero-badge badge-blue">🏦 ${DB.exchanges().length} exchanges</div>`;
   document.getElementById('s-recuperado').textContent=fmtSh(totalRec)+' $';
   const bEl=document.getElementById('s-balance');bEl.textContent=(balance>=0?'+':'')+fmtSh(balance)+' €';bEl.style.color=balance>=0?'var(--green)':'var(--red)';
-  document.getElementById('s-staking').textContent=fmt(totalStaking,4);
   document.getElementById('s-ops').textContent=compras.length+ventas.length;
   const allOps=[...compras.map(c=>({tipo:'compra',fecha:c.fecha,divId:c.divisaId,amount:c.costeCompra,moneda:c.monedaCosto||'€',exchId:c.exchangeId})),...ventas.map(v=>({tipo:'venta',fecha:v.fecha,divId:v.divisaId,amount:v.totalOperacion,moneda:'$',exchId:v.exchangeId}))].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,6);
   const rEl=document.getElementById('home-recent');
@@ -522,10 +523,10 @@ function renderHome(){
   if(!allOps.length){rEl.innerHTML='<div class="empty"><div class="icon">₿</div><h3>Sin datos</h3><p>Usa el botón + para añadir registros<br>o importa tu Excel desde Ajustes</p></div>';divRecent.style.display='none';divStaking.style.display='none';sEl.innerHTML='';return;}
   divRecent.style.display='';
   rEl.innerHTML='<div class="card" style="padding:6px 14px">'+allOps.map(op=>{const n=getDivNombre(op.divId)||op.divId;const m=cm(n);const isBuy=op.tipo==='compra';return`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)"><div class="crypto-icon" style="background:${m.c}22;color:${m.c};font-size:16px">${m.e}</div><div style="flex:1"><div style="font-weight:700;font-size:13px">${n}</div><div style="font-size:11px;color:var(--text2)">${fmtDS(op.fecha)} · ${getExchName(op.exchId)}</div></div><div style="text-align:right"><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:${isBuy?'var(--red)':'var(--green)'}">${isBuy?'-':'+'}${fmt(op.amount,2)} ${op.moneda}</div><span class="badge ${isBuy?'badge-buy':'badge-sell'}">${isBuy?'COMPRA':'VENTA'}</span></div></div>`;}).join('')+'</div>';
-  const actStk=staking.filter(s=>!s.fechaFinal||s.fechaFinal>=today()).slice(0,4);
+  const actStk=staking.filter(s=>s.activo==='true'||s.activo===true||s.activo==='TRUE').slice(0,4);
   if(!actStk.length){divStaking.style.display='none';sEl.innerHTML='';return;}
   divStaking.style.display='';
-  sEl.innerHTML=actStk.map(s=>{const n=getDivNombre(s.divisaId);const m=cm(n);return`<div class="staking-card"><div class="staking-icon">${m.e}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">${n}</div><div style="font-size:12px;color:var(--text2);margin-top:2px">${getExchName(s.exchangeId)} · desde ${fmtDS(s.fechaInicio)}</div><div class="staking-bar"><div class="staking-fill" style="width:100%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:4px">${s.obs||''}</div></div><div style="text-align:right"><div style="font-family:'JetBrains Mono';font-size:14px;font-weight:700;color:var(--purple)">+${fmt(s.ganancias,4)}</div><div style="font-size:10px;margin-top:2px;color:${s.fechaFinal?'var(--amber)':'var(--green)'}">● ${s.fechaFinal?fmtDS(s.fechaFinal):'FLEXIBLE'}</div></div></div>`;}).join('');
+  sEl.innerHTML=actStk.map(s=>{const n=getDivNombre(s.divisaId);const m=cm(n);const isAct=s.activo==='true';return`<div class="staking-card"><div class="staking-icon">${m.e}</div><div style="flex:1"><div style="font-weight:700;font-size:14px">${n}</div><div style="font-size:12px;color:var(--text2);margin-top:2px">${getExchName(s.exchangeId)} · desde ${fmtDS(s.fechaInicio)}</div><div class="staking-bar"><div class="staking-fill" style="width:100%"></div></div><div style="font-size:10px;color:var(--text3);margin-top:4px">${s.obs||''}</div></div><div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:6px"><div style="font-family:'JetBrains Mono';font-size:14px;font-weight:700;color:var(--purple)">+${fmt(s.ganancias,4)}</div><div style="font-size:10px;color:${s.fechaFinal?'var(--amber)':'var(--green)'}">● ${s.fechaFinal?fmtDS(s.fechaFinal):'FLEXIBLE'}</div><button onclick="toggleActivo('${s.id}')" style="font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid ${isAct?'var(--green)':'var(--red)'};background:${isAct?'var(--green-dim)':'var(--red-dim)'};color:${isAct?'var(--green)':'var(--red)'};font-family:'Syne';font-weight:700;cursor:pointer">${isAct?'ACTIVO':'INACTIVO'}</button></div></div>`;}).join('');
 }
 function renderPortfolio(){
   const divisas=DB.divisas(),compras=DB.compras(),staking=DB.staking();
@@ -559,6 +560,9 @@ function renderOps(){
   if(f==='all'||f==='gasto')gastos.forEach(g=>allOps.push({tipo:'gasto',id:g.id,fecha:g.fecha,divId:'',title:g.web||g.obs||'Ingreso Fiat',sub:`${g.web||''} ${g.obs?'· '+g.obs.substr(0,30):''}`,amount:g.euros,moneda:'€',sign:'-'}));
   if(f==='all'||f==='traspaso')traspasos.forEach(t=>allOps.push({tipo:'traspaso',id:t.id,fecha:t.fecha,divId:t.divisaId,title:getDivNombre(t.divisaId)||t.divisaId,sub:`${getExchName(t.exchangeId)} → ${getExchName(t.altaExchange)}`,amount:t.cantidadEnviada,moneda:'€',sign:''}));
   allOps.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  const searchQ=(document.getElementById('ops-search')||{}).value||'';
+  const sq=searchQ.trim().toLowerCase();
+  if(sq)allOps=allOps.filter(op=>(op.title||'').toLowerCase().includes(sq)||(op.sub||'').toLowerCase().includes(sq));
   document.getElementById('ops-count').textContent=allOps.length;
   if(!allOps.length){document.getElementById('ops-list').innerHTML='<div class="empty"><div class="icon">📋</div><h3>Sin operaciones</h3><p>Usa el botón + para añadir</p></div>';return;}
   const byMonth={};allOps.forEach(op=>{const key=op.fecha?op.fecha.substr(0,7):'????-??';if(!byMonth[key])byMonth[key]=[];byMonth[key].push(op);});
@@ -575,11 +579,28 @@ function renderOps(){
       const color=tcol[op.tipo]||'var(--text2)';const badge=tbadge[op.tipo]||'badge-exchange';const label2=tlabel[op.tipo]||op.tipo.toUpperCase();const delType=tdeltype[op.tipo]||op.tipo;
       const n=getDivNombre(op.divId)||op.title;const meta=cm(n);const amtStr=op.amount?`${op.sign}${fmt(op.amount,2)} ${op.moneda}`:'—';
       const ganStr=op.ganancia!=null&&op.ganancia!==0?`<span style="font-size:10px;color:${op.ganancia>=0?'var(--green)':'var(--red)'}">${op.ganancia>=0?'▲':'▼'}${fmt(Math.abs(op.ganancia),2)}$</span>`:'';
-      html+=`<div class="op-item"><div class="op-dot" style="background:${color}"></div><div style="width:32px;height:32px;border-radius:10px;background:${meta.c}22;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${meta.e}</div><div class="op-body"><div class="op-title">${op.title}</div><div class="op-sub">${fmtDS(op.fecha)} · ${op.sub}</div></div><div style="text-align:right;flex-shrink:0"><div class="op-amount" style="color:${op.sign==='-'?'var(--red)':'var(--green)'}">${amtStr}</div><div style="margin-top:2px">${ganStr}<span class="badge ${badge}" style="margin-left:2px">${label2}</span></div></div><button class="btn-edit-sm" onclick="openEdit('${delType}','${op.id}')" title="Editar">✏️</button><button class="btn-del-sm" onclick="deleteRecord('${delType}','${op.id}')" title="Eliminar">🗑</button></div>`;
+      html+=`<div class="op-item" onclick="showOpDetail('${delType}','${op.id}')" style="cursor:pointer"><div class="op-dot" style="background:${color}"></div><div style="width:32px;height:32px;border-radius:10px;background:${meta.c}22;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${meta.e}</div><div class="op-body"><div class="op-title">${op.title}</div><div class="op-sub">${fmtDS(op.fecha)} · ${op.sub}</div></div><div style="text-align:right;flex-shrink:0"><div class="op-amount" style="color:${op.sign==='-'?'var(--red)':'var(--green)'}">${amtStr}</div><div style="margin-top:2px">${ganStr}<span class="badge ${badge}" style="margin-left:2px">${label2}</span></div></div><button class="btn-edit-sm" onclick="event.stopPropagation();openEdit('${delType}','${op.id}')" title="Editar">✏️</button><button class="btn-del-sm" onclick="event.stopPropagation();deleteRecord('${delType}','${op.id}')" title="Eliminar">🗑</button></div>`;
     });
     html+=`</div></div>`;
   });
   document.getElementById('ops-list').innerHTML=html;
+}
+function showOpDetail(tipo,id){
+  const map={compra:'compras',venta:'ventas',staking:'staking',gasto:'gastos',traspaso:'traspasos',intercambio:'ventas'};
+  const rec=DB.get(map[tipo]).find(r=>r.id===id);if(!rec)return;
+  const titulos={compra:'🛒 Compra',venta:'💰 Venta',intercambio:'🔄 Intercambio',staking:'⚡ Staking',gasto:'💶 Gasto Fiat',traspaso:'↔️ Traspaso'};
+  let rows=[];
+  if(tipo==='compra'){rows=[['Fecha',fmtDS(rec.fecha)],['Divisa',getDivNombre(rec.divisaId)],['Exchange',getExchName(rec.exchangeId)],['Precio Unidad',fmt(rec.precioUnidad,4)+' '+(rec.moneda||'')],['Cantidad',fmtStock(rec.cantidad)],['Coste Total',fmt(rec.costeCompra,2)+' '+(rec.monedaCosto||'€')],['Comisiones',fmt(rec.comisiones,4)],['Web',rec.webCompra||'—'],['Observaciones',rec.obs||'—']];}
+  else if(tipo==='venta'||tipo==='intercambio'){rows=[['Fecha',fmtDS(rec.fecha)],['Divisa',getDivNombre(rec.divisaId)],['Exchange',getExchName(rec.exchangeId)],['Tipo',rec.operacion||'VENTA'],['P. Compra',fmt(rec.precioUCompra,4)+' $'],['P. Venta',fmt(rec.precioUVenta,4)+' $'],['Cantidad',fmtStock(rec.cantidad)],['Total Operación',fmt(rec.totalOperacion,2)+' $'],['Ganancia',fmt(rec.ganancia,2)+' $','color:'+(rec.ganancia>=0?'var(--green)':'var(--red)')],['Comisiones',fmt(rec.comisiones,4)]];}
+  else if(tipo==='staking'){rows=[['Divisa',getDivNombre(rec.divisaId)],['Exchange',getExchName(rec.exchangeId)],['Cantidad',fmtStock(rec.cantidad)],['Fecha Inicio',fmtDS(rec.fechaInicio)],['Fecha Final',rec.fechaFinal?fmtDS(rec.fechaFinal):'— (activo)'],['Ganancias',fmtStock(rec.ganancias)],['Suma Total',fmtStock(rec.sumaTotal)],['Estado',rec.activo==='true'?'🟢 Activo':'🔴 Inactivo'],['Observaciones',rec.obs||'—']];}
+  else if(tipo==='gasto'){rows=[['Fecha',fmtDS(rec.fecha)],['Plataforma',rec.web||'—'],['Euros',fmt(rec.euros,2)+' €'],['USDT',fmt(rec.usdt,2)+' $'],['Observaciones',rec.obs||'—']];}
+  else if(tipo==='traspaso'){rows=[['Fecha',fmtDS(rec.fecha)],['Divisa',getDivNombre(rec.divisaId)],['Origen',getExchName(rec.exchangeId)],['Destino',getExchName(rec.altaExchange)],['Enviado',fmt(rec.cantidadEnviada,4)],['Recibido',fmt(rec.cantidadRecibida,4)],['Comisiones',fmt(rec.comisiones,4)],['Observaciones',rec.obs||'—']];}
+  showDetail(titulos[tipo]||tipo,rows);
+}
+function toggleActivo(id){
+  const arr=DB.staking();const s=arr.find(r=>r.id===id);if(!s)return;
+  s.activo=s.activo==='true'?'false':'true';
+  DB.set('staking',arr);renderAll();toast(s.activo==='true'?'✅ Marcado como activo':'⏹ Marcado como inactivo');
 }
 function toggleMG(id){const b=document.getElementById(id),c=document.getElementById('chev-'+id);if(b){b.classList.toggle('open');if(c)c.classList.toggle('open');}}
 let charts={};
@@ -598,9 +619,6 @@ function renderStats(){
   const withStock=divisas.filter(d=>d.stock>0);
   const colors=['#F59E0B','#10B981','#3B82F6','#8B5CF6','#EF4444','#EC4899','#14B8A6','#F97316','#06B6D4','#84CC16'];
   if(withStock.length){charts.port=new Chart(document.getElementById('chart-portfolio'),{type:'doughnut',data:{labels:withStock.map(d=>d.nombre),datasets:[{data:withStock.map(()=>1),backgroundColor:withStock.map((d,i)=>cm(d.nombre).c||colors[i%colors.length]),borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:true,position:'right',labels:{color:tc,font:{family:'Syne',size:11},padding:8,boxWidth:12}}}}});}
-  const ec={};DB.compras().forEach(c=>{if(c.exchangeId){const n=getExchName(c.exchangeId);ec[n]=(ec[n]||0)+1;}});
-  const topE=Object.entries(ec).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  if(topE.length){charts.exch=new Chart(document.getElementById('chart-exchange'),{type:'doughnut',data:{labels:topE.map(e=>e[0]),datasets:[{data:topE.map(e=>e[1]),backgroundColor:colors,borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{display:true,position:'right',labels:{color:tc,font:{family:'Syne',size:11},padding:8,boxWidth:12}}}}});}
 }
 function renderInvestAccordion(){
   const gastos=DB.gastos().filter(g=>g.fecha&&g.euros>0);
@@ -627,7 +645,12 @@ function importExcel(input){
       const ventas=toRows('Venta').filter(r=>hdr(r,'ID Venta','ID VENTA')&&String(hdr(r,'ID Venta','ID VENTA')).trim()).map(r=>({id:String(hdr(r,'ID Venta','ID VENTA')||'').trim(),exchangeId:String(hdr(r,'ID KEY EXCHANGE','Id key exchange')||'').trim(),fecha:parseExcelDate(hdr(r,'FECHA','Fecha')),divisaId:String(hdr(r,'Divisa','DIVISA')||'').trim(),precioUCompra:parseCur(hdr(r,'Precio U. Compra','PRECIO U. COMPRA')),precioUVenta:parseCur(hdr(r,'Precio Unidad venta','PRECIO UNIDAD VENTA')),cantidad:parseNum(hdr(r,'Cantidad','CANTIDAD')),comisiones:parseCur(hdr(r,'Comisiones','COMISIONES')),operacion:String(hdr(r,'OPERACIÓN','Operacion','OPERACION')||'').trim(),totalOperacion:parseCur(hdr(r,'Total Operación','TOTAL OPERACION')),ganancia:parseCur(hdr(r,'Gana','ganancia','GANANCIA','Ganancia'))}));
       const exchanges=toRows('Exchange').filter(r=>hdr(r,'ID EXCHANGE','Id exchange')&&String(hdr(r,'ID EXCHANGE','Id exchange')).trim()).map(r=>({id:String(hdr(r,'ID EXCHANGE','Id exchange')||'').trim(),nombre:String(hdr(r,'NOMBRE EXCHANGE','Nombre exchange')||'').trim(),divisas:String(hdr(r,'DIVISA','Divisa')||'').trim(),obs:String(hdr(r,'OBSERVACIONES','Observaciones')||'').trim()}));
       const divisas=toRows('DIVISA').filter(r=>hdr(r,'ID DIVISA','Id divisa')&&String(hdr(r,'ID DIVISA','Id divisa')).trim()).map(r=>({id:String(hdr(r,'ID DIVISA','Id divisa')||'').trim(),nombre:String(hdr(r,'DIVISA','Divisa')||'').trim(),ref:String(hdr(r,'REF NOMBRE DIVISA','Ref nombre divisa')||'').trim(),stock:parseNum(hdr(r,'Stock','STOCK'))}));
-      const staking=toRows('Staking').filter(r=>hdr(r,'Id staking','ID STAKING')&&String(hdr(r,'Id staking','ID STAKING')).trim()).map(r=>({id:String(hdr(r,'Id staking','ID STAKING')||'').trim(),divisaId:String(hdr(r,'Divisa','DIVISA')||'').trim(),exchangeId:String(hdr(r,'Exchange','EXCHANGE')||'').trim(),cantidad:parseNum(hdr(r,'Cantidad','CANTIDAD')),fechaInicio:parseExcelDate(hdr(r,'Fecha Inicio','FECHA INICIO')),fechaFinal:parseExcelDate(hdr(r,'Fecha Final','FECHA FINAL')),ganancias:parseNum(hdr(r,'Ganancias Acumuladas','GANANCIAS ACUMULADAS')),obs:String(hdr(r,'Observaciones','OBSERVACIONES')||'').trim(),sumaTotal:parseNum(hdr(r,'Suma total','SUMA TOTAL')),activo:String(hdr(r,'ACTIVO','Activo')||'').trim()}));
+      const staking=toRows('Staking').filter(r=>hdr(r,'Id staking','ID STAKING')&&String(hdr(r,'Id staking','ID STAKING')).trim()).map(r=>{
+        const fFinal=hdr(r,'Fecha Final','FECHA FINAL');
+        const activoRaw=hdr(r,'ACTIVO','Activo');
+        const activoStr=String(activoRaw||'').trim().toLowerCase();
+        return {id:String(hdr(r,'Id staking','ID STAKING')||'').trim(),divisaId:String(hdr(r,'Divisa','DIVISA')||'').trim(),exchangeId:String(hdr(r,'Exchange','EXCHANGE')||'').trim(),cantidad:parseNum(hdr(r,'Cantidad','CANTIDAD')),fechaInicio:parseExcelDate(hdr(r,'Fecha Inicio','FECHA INICIO')),fechaFinal:(fFinal&&String(fFinal).trim()&&String(fFinal).trim()!=='0')?parseExcelDate(fFinal):'',ganancias:parseNum(hdr(r,'Ganancias Acumuladas','GANANCIAS ACUMULADAS')),obs:String(hdr(r,'Observaciones','OBSERVACIONES')||'').trim(),sumaTotal:parseNum(hdr(r,'Suma total','SUMA TOTAL')),activo:(activoStr==='true'||activoStr==='1'||activoStr==='si'||activoStr==='sí')?'true':'false'};
+      });
       const traspasos=toRows('Traspasos de exchange').filter(r=>hdr(r,'ID Traspasos','ID TRASPASOS')&&String(hdr(r,'ID Traspasos','ID TRASPASOS')).trim()).map(r=>({id:String(hdr(r,'ID Traspasos','ID TRASPASOS')||'').trim(),divisaId:String(hdr(r,'Divisa','DIVISA')||'').trim(),exchangeId:String(hdr(r,'Exchange','EXCHANGE')||'').trim(),fecha:parseExcelDate(hdr(r,'Fecha','FECHA')),cantidadEnviada:parseCur(hdr(r,'Cantidad enviada','CANTIDAD ENVIADA')),comisiones:parseCur(hdr(r,'Comisiones','COMISIONES')),cantidadRecibida:parseCur(hdr(r,'C. Recibida','C. recibida')),altaExchange:String(hdr(r,'Alta Exchange','Alta exchange')||'').trim(),obs:String(hdr(r,'observaciones','Observaciones','OBSERVACIONES')||'').trim()}));
       const gastos=toRows('Gastos Euros').filter(r=>{const eu=hdr(r,'Euros','EUROS');return eu&&parseCur(eu)>0;}).map(r=>({id:String(hdr(r,'ID EUROS','Id euros')||uid()).trim(),euros:parseCur(hdr(r,'Euros','EUROS')),usdt:parseCur(hdr(r,'USDT','Usdt')),web:String(hdr(r,'WEB','Web')||'').trim(),fecha:parseExcelDate(hdr(r,'FECHA','Fecha')),obs:String(hdr(r,'Observaciones','OBSERVACIONES')||'').trim()}));
       DB.set('compras',compras);DB.set('ventas',ventas);DB.set('exchanges',exchanges);DB.set('divisas',divisas);DB.set('staking',staking);DB.set('traspasos',traspasos);DB.set('gastos',gastos);
