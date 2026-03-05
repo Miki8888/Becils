@@ -272,6 +272,10 @@ body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:
       <div class="card" style="margin-bottom:12px">
         <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);font-weight:700;margin-bottom:12px">⚠️ Peligro</div>
         <div class="setting-row">
+          <div><div class="setting-label">Diagnóstico de divisas</div><div class="setting-sub">Ver IDs y compras de cada activo</div></div>
+          <button class="btn-action" onclick="showDiagnostico()">🔍 Ver</button>
+        </div>
+        <div class="setting-row">
           <div><div class="setting-label">Borrar todos los datos</div><div class="setting-sub">Acción irreversible</div></div>
           <button class="btn-action red" onclick="clearAll()">Borrar</button>
         </div>
@@ -279,7 +283,7 @@ body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:
       <div class="card" style="text-align:center;padding:24px">
         <div style="font-size:36px;margin-bottom:10px">₿</div>
         <div style="font-weight:800;font-size:18px;background:linear-gradient(135deg,#F59E0B,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">BECILS Crypto</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v3.0 · Datos locales</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v3.2 · Datos locales</div>
         <div style="font-size:11px;color:var(--text3);margin-top:12px;font-family:'JetBrains Mono'" id="db-stats">Sin datos</div>
       </div>
     </div>
@@ -534,18 +538,19 @@ function renderHome(){
 }
 function renderPortfolio(){
   const divisas=DB.divisas(),compras=DB.compras(),ventas=DB.ventas(),staking=DB.staking(),traspasos=DB.traspasos();
-  // Calcular stock real una sola vez para todas las divisas
   const stockMap={};
   divisas.forEach(d=>{
-    const comprado=compras.filter(c=>c.divisaId===d.id).reduce((s,c)=>s+(parseFloat(c.cantidad)||0),0);
-    const vendido=ventas.filter(v=>v.divisaId===d.id).reduce((s,v)=>s+(parseFloat(v.cantidad)||0),0);
-    if(comprado>0){
-      // Tenemos datos de compras: calcular
-      const real=comprado-vendido;
-      stockMap[d.id]=real>0.000001?real:0;
+    const excelStock=parseFloat(d.stock)||0;
+    if(excelStock>0){
+      // El Excel tiene stock manual → es la fuente de verdad
+      stockMap[d.id]=excelStock;
     } else {
-      // Sin datos de compras: usar stock del Excel
-      stockMap[d.id]=parseFloat(d.stock)||0;
+      // Excel dice 0 → calcular desde compras/ventas como fallback
+      // (cubre compras recientes no reflejadas aún en el Excel)
+      const comprado=compras.filter(c=>c.divisaId===d.id).reduce((s,c)=>s+(parseFloat(c.cantidad)||0),0);
+      const vendido=ventas.filter(v=>v.divisaId===d.id).reduce((s,v)=>s+(parseFloat(v.cantidad)||0),0);
+      const calc=comprado-vendido;
+      stockMap[d.id]=calc>0.000001?calc:0;
     }
   });
   const withStock=divisas.filter(d=>stockMap[d.id]>0).sort((a,b)=>stockMap[b.id]-stockMap[a.id]);
@@ -699,6 +704,18 @@ function importJSON(input){
   const reader=new FileReader();
   reader.onload=e=>{try{const d=JSON.parse(e.target.result);['compras','ventas','exchanges','divisas','staking','traspasos','gastos'].forEach(k=>{if(d[k])DB.set(k,d[k]);});renderAll();toast('✅ Backup restaurado');}catch{toast('❌ JSON inválido');}input.value='';};
   reader.readAsText(file);
+}
+function showDiagnostico(){
+  const divisas=DB.divisas(),compras=DB.compras();
+  const rows=divisas.map(d=>{
+    const byId=compras.filter(c=>c.divisaId===d.id).length;
+    const byNom=compras.filter(c=>String(c.divisaId||'').toUpperCase().trim()===d.nombre.toUpperCase().trim()).length;
+    const status=byId>0?'✅ por ID':(byNom>0?'⚠️ por nombre':'❌ sin match');
+    return[d.nombre,`ID:"${d.id}"`,`${byId} compras (id) / ${byNom} (nombre) → ${status}`];
+  });
+  document.getElementById('md-title').textContent='🔍 Diagnóstico divisas';
+  document.getElementById('md-body').innerHTML=rows.map(r=>`<div class="modal-row"><div class="modal-key" style="font-size:11px">${r[0]}<br><span style="color:var(--text3);font-size:10px">${r[1]}</span></div><div class="modal-val" style="font-size:10px;text-align:right;max-width:55%">${r[2]}</div></div>`).join('');
+  openModal('modal-detail');
 }
 function clearAll(){if(!confirm('¿Borrar todos los datos? Acción irreversible.'))return;['compras','ventas','exchanges','divisas','staking','traspasos','gastos'].forEach(k=>localStorage.removeItem('bc_'+k));renderAll();toast('🗑 Datos borrados');}
 function renderAll(){
