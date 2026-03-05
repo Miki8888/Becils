@@ -283,7 +283,7 @@ body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:
       <div class="card" style="text-align:center;padding:24px">
         <div style="font-size:36px;margin-bottom:10px">₿</div>
         <div style="font-weight:800;font-size:18px;background:linear-gradient(135deg,#F59E0B,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">BECILS Crypto</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v3.2 · Datos locales</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v3.3 · Datos locales</div>
         <div style="font-size:11px;color:var(--text3);margin-top:12px;font-family:'JetBrains Mono'" id="db-stats">Sin datos</div>
       </div>
     </div>
@@ -541,14 +541,17 @@ function renderPortfolio(){
   const stockMap={};
   divisas.forEach(d=>{
     const excelStock=parseFloat(d.stock)||0;
-    if(excelStock>0){
-      // El Excel tiene stock manual → es la fuente de verdad
+    const comprado=compras.filter(c=>c.divisaId===d.id).reduce((s,c)=>s+(parseFloat(c.cantidad)||0),0);
+    const vendido=ventas.filter(v=>v.divisaId===d.id).reduce((s,v)=>s+(parseFloat(v.cantidad)||0),0);
+    if(comprado===0){
+      // Sin compras registradas: confiar en Excel
       stockMap[d.id]=excelStock;
+    } else if(vendido>comprado*2){
+      // Vendido mucho más de lo comprado → cantidad venta en unidades distintas (ej: USD)
+      // Confiar en Excel: si dice >0 queda algo, si dice 0 está vendido
+      stockMap[d.id]=excelStock>0?excelStock:0;
     } else {
-      // Excel dice 0 → calcular desde compras/ventas como fallback
-      // (cubre compras recientes no reflejadas aún en el Excel)
-      const comprado=compras.filter(c=>c.divisaId===d.id).reduce((s,c)=>s+(parseFloat(c.cantidad)||0),0);
-      const vendido=ventas.filter(v=>v.divisaId===d.id).reduce((s,v)=>s+(parseFloat(v.cantidad)||0),0);
+      // Ratio razonable → el cálculo es fiable
       const calc=comprado-vendido;
       stockMap[d.id]=calc>0.000001?calc:0;
     }
