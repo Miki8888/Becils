@@ -289,7 +289,7 @@ body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:
       <div class="card" style="text-align:center;padding:24px">
         <div style="font-size:36px;margin-bottom:10px">₿</div>
         <div style="font-weight:800;font-size:18px;background:linear-gradient(135deg,#F59E0B,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">BECILS Crypto</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v3.8 · Datos locales</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v3.9 · Datos locales</div>
         <div style="font-size:11px;color:var(--text3);margin-top:12px;font-family:'JetBrains Mono'" id="db-stats">Sin datos</div>
       </div>
     </div>
@@ -456,7 +456,7 @@ function fr(...f){return`<div class="form-row">${f.join('')}</div>`;}
 function buildFormBody(type){
   switch(type){
     case'compra':return fr(fg('fecha','Fecha','date'),fg('exchange','Exchange','exchange'))+fg('divisa','Cripto / Divisa','cripto')+fr(fg('precioU','Precio Unidad','number',{ph:'0.00'}),fg('moneda','Moneda','select',{options:['Euros','USDT','USD']}))+fr(fg('cantidad','Cantidad','number',{ph:'0.00000000'}),fg('coste','Coste Total','number',{ph:'0.00'}))+fr(fg('comision','Comisiones','number',{ph:'0.00'}),fg('web','Plataforma / Web','text',{ph:'Kraken, MEXC...'}))+fg('obs','Observaciones','text',{ph:'Opcional'})+`<div style="margin-top:12px;padding:12px;background:var(--card2);border-radius:var(--radius-sm);border:1px solid var(--border)"><label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" id="ff-add-gasto" onchange="toggleGastoField()" style="width:18px;height:18px;accent-color:var(--amber);cursor:pointer"><span style="font-size:13px;font-weight:700">💶 Registrar también como entrada fiat</span></label><div id="gasto-field" style="display:none;margin-top:10px">${fg('euros-gasto','€ salidos del banco','number',{ph:'0.00'})}</div></div>`;
-    case'venta':return fr(fg('fecha','Fecha','date'),fg('exchange','Exchange','exchange'))+`<div class="form-group"><label>Cripto / Divisa</label><select id="ff-divisa" onchange="calcFIFO()"><option value="">— Seleccionar —</option>${DB.divisas().map(d=>`<option value="${d.id}">${d.nombre}</option>`).join('')}</select></div>`+fr(`<div class="form-group"><label>Precio U. Compra <span id="fifo-moneda-label" style="font-size:10px;color:var(--text3)"></span></label><input type="number" id="ff-precioUC" step="any" placeholder="0.00" oninput="calcFIFO()"></div>`,`<div class="form-group"><label>Precio U. Venta</label><div style="display:flex;gap:6px"><input type="number" id="ff-precioUV" step="any" placeholder="0.00" style="flex:1" oninput="calcFIFO()"><select id="ff-monedaV" onchange="calcFIFO()" style="width:80px;background:var(--card2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Syne';font-size:13px;padding:0 4px"><option value="USD">$</option><option value="EUR">€</option><option value="USDT">USDT</option></select></div></div>`)+fr(`<div class="form-group"><label>Cantidad</label><input type="number" id="ff-cantidad" step="any" placeholder="0.000000" oninput="calcFIFO()"></div>`,fg('operacion','Tipo','select',{options:['VENTA','INTERCAMBIO']}))+fr(`<div class="form-group"><label>Total Operación</label><div style="display:flex;gap:6px"><input type="number" id="ff-total" step="any" placeholder="0.00" style="flex:1" oninput="calcFIFO()"><select id="ff-monedaTotal" onchange="calcFIFO()" style="width:80px;background:var(--card2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Syne';font-size:13px;padding:0 4px"><option value="USD">$</option><option value="EUR">€</option><option value="USDT">USDT</option></select></div></div>`,`<div class="form-group"><label>Ganancia / Pérdida <span id="fifo-badge" style="display:none;font-size:9px;padding:1px 6px;border-radius:10px;background:var(--amber-dim);color:var(--amber);font-weight:700;margin-left:4px">✨ FIFO</span></label><div style="display:flex;gap:6px"><input type="number" id="ff-ganancia" step="any" placeholder="0.00" style="flex:1" oninput="document.getElementById('fifo-badge').style.display='none'"><select id="ff-monedaGan" style="width:80px;background:var(--card2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Syne';font-size:13px;padding:0 4px"><option value="USD">$</option><option value="EUR">€</option><option value="USDT">USDT</option></select></div></div>`)+`<div id="tipo-cambio-wrap" style="display:none;margin-bottom:8px">${fr(`<div class="form-group"><label>Tipo de cambio €/$ <span style="font-size:10px;color:var(--text3)">(opcional, para ganancia en €)</span></label><input type="number" id="ff-tipocambio" step="any" placeholder="ej: 1.08" oninput="calcFIFO()"></div>`,`<div class="form-group"><label>Ganancia en € <span style="font-size:10px;color:var(--text3)">(calculada)</span></label><input type="number" id="ff-ganancia-eur" step="any" placeholder="0.00" readonly style="opacity:0.7;background:var(--card2)"></div>`)}</div>`+fg('comision','Comisiones','number',{ph:'0.00'})+fg('obs','Observaciones','text',{ph:'Opcional'});
+    case'venta':return fr(fg('fecha','Fecha','date'),fg('exchange','Exchange','exchange'))+`<div class="form-group"><label>Cripto / Divisa</label><select id="ff-divisa" onchange="calcFIFO()"><option value="">— Seleccionar —</option>${DB.divisas().map(d=>`<option value="${d.id}">${d.nombre}</option>`).join('')}</select></div>`+`<div class="form-group"><label>Moneda de la operación</label><div style="display:flex;gap:8px">${['EUR €','USD $','USDT'].map((m,i)=>{const v=i===0?'EUR':i===1?'USD':'USDT';return`<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:var(--card2);border:1.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-weight:700"><input type="radio" name="ff-monedaOp" value="${v}" ${i===1?'checked':''} onchange="calcFIFO()" style="accent-color:var(--amber)">${m}</label>`;}).join('')}</div></div>`+fr(`<div class="form-group"><label>Precio U. Compra <span id="fifo-moneda-label" style="font-size:10px;color:var(--text3)"></span></label><input type="number" id="ff-precioUC" step="any" placeholder="0.00" oninput="calcFIFO()"></div>`,`<div class="form-group"><label>Precio U. Venta</label><input type="number" id="ff-precioUV" step="any" placeholder="0.00" oninput="calcFIFO()"></div>`)+fr(`<div class="form-group"><label>Cantidad (unidades)</label><input type="number" id="ff-cantidad" step="any" placeholder="0.000000" oninput="calcFIFO()"></div>`,fg('operacion','Tipo','select',{options:['VENTA','INTERCAMBIO']}))+fr(`<div class="form-group"><label>Total Operación</label><input type="number" id="ff-total" step="any" placeholder="0.00" oninput="calcFIFO()"></div>`,`<div class="form-group"><label>Ganancia / Pérdida <span id="fifo-badge" style="display:none;font-size:9px;padding:1px 6px;border-radius:10px;background:var(--amber-dim);color:var(--amber);font-weight:700;margin-left:4px">✨ FIFO</span></label><input type="number" id="ff-ganancia" step="any" placeholder="0.00" oninput="document.getElementById('fifo-badge').style.display='none'"></div>`)+`<div id="tipo-cambio-wrap" style="display:none;margin-bottom:8px">${fr(`<div class="form-group"><label>Tipo de cambio €/$ <span style="font-size:10px;color:var(--text3)">(opcional)</span></label><input type="number" id="ff-tipocambio" step="any" placeholder="ej: 1.08" oninput="calcFIFO()"></div>`,`<div class="form-group"><label>Ganancia en € <span style="font-size:10px;color:var(--text3)">(calculada)</span></label><input type="number" id="ff-ganancia-eur" step="any" placeholder="0.00" readonly style="opacity:0.7;background:var(--card2)"></div>`)}</div>`+fg('comision','Comisiones','number',{ph:'0.00'})+fg('obs','Observaciones','text',{ph:'Opcional'});
     case'staking':return fg('divisa','Cripto / Divisa','cripto')+fr(fg('exchange','Exchange','exchange'),fg('cantidad','Cantidad en Staking','number',{ph:'0.00'}))+fr(fg('fechaI','Fecha Inicio','date'),fg('fechaF','Fecha Final (opcional)','date'))+fr(fg('ganancias','Ganancias Acumuladas','number',{ph:'0.000'}),fg('sumaTotal','Suma Total','number',{ph:'0.00'}))+fg('obs','Observaciones','text',{ph:'Flexible, bonded 15%, etc.'})+fg('activo','Estado del Staking','select',{options:[{v:'true',l:'🟢 Activo'},{v:'false',l:'🔴 Inactivo'}]});
     case'gasto':return fr(fg('fecha','Fecha','date'),fg('web','Plataforma / Web','text',{ph:'MEXC, Kraken...'}))+fr(fg('euros','Euros invertidos','number',{ph:'0.00'}),fg('usdt','USDT equivalente','number',{ph:'0.00'}))+fg('obs','Observaciones','text',{ph:'Descripción del ingreso fiat'});
     case'traspaso':return fg('divisa','Cripto / Divisa','cripto')+fr(fg('exOrigen','Exchange Origen','exchange'),fg('exDestino','Exchange Destino','exchange'))+fr(fg('fecha','Fecha','date'),fg('enviada','Cantidad Enviada (€)','number',{ph:'0.00'}))+fr(fg('comision','Comisiones (€)','number',{ph:'0.00'}),fg('recibida','Cantidad Recibida (€)','number',{ph:'0.00'}))+fg('obs','Observaciones','text',{ph:'Opcional'});
@@ -475,8 +475,8 @@ function openForm(type,rec=null){
   if(rec){
     setTimeout(()=>{
       if(type==='compra'){setFF('fecha',rec.fecha);setFF('exchange',rec.exchangeId);setFF('divisa',rec.divisaId);setFF('precioU',rec.precioUnidad);setFF('moneda',rec.moneda||rec.monedaCosto);setFF('cantidad',rec.cantidad);setFF('coste',rec.costeCompra);setFF('comision',rec.comisiones);setFF('web',rec.webCompra);setFF('obs',rec.obs);}
-      else if(type==='venta'){setFF('fecha',rec.fecha);setFF('exchange',rec.exchangeId);setFF('divisa',rec.divisaId);setFF('precioUC',rec.precioUCompra);setFF('precioUV',rec.precioUVenta);setFF('monedaV',rec.monedaVenta||'USD');setFF('cantidad',rec.cantidad);setFF('operacion',rec.operacion);setFF('total',rec.totalOperacion);setFF('monedaTotal',rec.monedaTotal||'USD');setFF('ganancia',rec.ganancia);setFF('monedaGan',rec.monedaGanancia||'USD');setFF('tipocambio',rec.tipoCambio);setFF('comision',rec.comisiones);setFF('obs',rec.obs);
-        // Solo calcular FIFO si ganancia está vacía
+      else if(type==='venta'){setFF('fecha',rec.fecha);setFF('exchange',rec.exchangeId);setFF('divisa',rec.divisaId);setFF('precioUC',rec.precioUCompra);setFF('precioUV',rec.precioUVenta);setFF('cantidad',rec.cantidad);setFF('operacion',rec.operacion);setFF('total',rec.totalOperacion);setFF('ganancia',rec.ganancia);setFF('tipocambio',rec.tipoCambio);setFF('comision',rec.comisiones);setFF('obs',rec.obs);
+        const mv=rec.monedaVenta||'USD';const radioEl=document.querySelector(`input[name="ff-monedaOp"][value="${mv}"]`);if(radioEl)radioEl.checked=true;
         if(!rec.ganancia)setTimeout(calcFIFO,100);}
       else if(type==='staking'){setFF('divisa',rec.divisaId);setFF('exchange',rec.exchangeId);setFF('cantidad',rec.cantidad);setFF('fechaI',rec.fechaInicio);setFF('fechaF',rec.fechaFinal);setFF('ganancias',rec.ganancias);setFF('sumaTotal',rec.sumaTotal);setFF('obs',rec.obs);setFF('activo',rec.activo==='true'?'true':'false');}
       else if(type==='gasto'){setFF('fecha',rec.fecha);setFF('web',rec.web);setFF('euros',rec.euros);setFF('usdt',rec.usdt);setFF('obs',rec.obs);}
@@ -509,7 +509,7 @@ function saveForm(type){
         }
       }
       upsert('compras',r);break;}
-    case'venta':{const divVal=gff('divisa');if(!divVal){toast('⚠️ Selecciona o escribe una divisa');return;}const divisaId=DB.divisas().find(d=>d.id===divVal)?divVal:getDivId(divVal);const r={id:editId||uid(),exchangeId:gff('exchange'),fecha:gff('fecha'),divisaId,precioUCompra:gffN('precioUC'),precioUVenta:gffN('precioUV'),monedaVenta:gff('monedaV')||'USD',cantidad:gffN('cantidad'),comisiones:gffN('comision'),operacion:gff('operacion')||'VENTA',totalOperacion:gffN('total'),monedaTotal:gff('monedaTotal')||'USD',ganancia:gffN('ganancia'),monedaGanancia:gff('monedaGan')||'USD',gananciaEur:gffN('ganancia-eur')||null,tipoCambio:gffN('tipocambio')||null,obs:gff('obs')};if(!r.fecha){toast('⚠️ La fecha es obligatoria');return;}upsert('ventas',r);break;}
+    case'venta':{const divVal=gff('divisa');if(!divVal){toast('⚠️ Selecciona o escribe una divisa');return;}const divisaId=DB.divisas().find(d=>d.id===divVal)?divVal:getDivId(divVal);const monedaOpEl=document.querySelector('input[name="ff-monedaOp"]:checked');const monedaOp=monedaOpEl?.value||'USD';const r={id:editId||uid(),exchangeId:gff('exchange'),fecha:gff('fecha'),divisaId,precioUCompra:gffN('precioUC'),precioUVenta:gffN('precioUV'),monedaVenta:monedaOp,cantidad:gffN('cantidad'),comisiones:gffN('comision'),operacion:gff('operacion')||'VENTA',totalOperacion:gffN('total'),monedaTotal:monedaOp,ganancia:gffN('ganancia'),monedaGanancia:monedaOp,gananciaEur:gffN('ganancia-eur')||null,tipoCambio:gffN('tipocambio')||null,obs:gff('obs')};if(!r.fecha){toast('⚠️ La fecha es obligatoria');return;}upsert('ventas',r);break;}
     case'staking':{const divVal=gff('divisa');if(!divVal){toast('⚠️ Selecciona una divisa');return;}const divisaId=DB.divisas().find(d=>d.id===divVal)?divVal:getDivId(divVal);const r={id:editId||uid(),divisaId,exchangeId:gff('exchange'),cantidad:gffN('cantidad'),fechaInicio:gff('fechaI'),fechaFinal:gff('fechaF'),ganancias:gffN('ganancias'),obs:gff('obs'),sumaTotal:gffN('sumaTotal'),activo:gff('activo')||'true'};upsert('staking',r);break;}
     case'gasto':{const euros=gffN('euros');if(!euros){toast('⚠️ Introduce los euros invertidos');return;}const r={id:editId||uid(),euros,usdt:gffN('usdt'),web:gff('web'),fecha:gff('fecha'),obs:gff('obs')};upsert('gastos',r);break;}
     case'traspaso':{const divVal=gff('divisa');const divisaId=divVal&&DB.divisas().find(d=>d.id===divVal)?divVal:getDivId(divVal);const r={id:editId||uid(),divisaId,exchangeId:gff('exOrigen'),altaExchange:gff('exDestino'),fecha:gff('fecha'),cantidadEnviada:gffN('enviada'),comisiones:gffN('comision'),cantidadRecibida:gffN('recibida'),obs:gff('obs')};upsert('traspasos',r);break;}
@@ -680,8 +680,14 @@ function calcFIFO(){
   const cantidad=gffN('cantidad');
   const precioUV=gffN('precioUV');
   const total=gffN('total');
-  const monedaVenta=(document.getElementById('ff-monedaTotal')?.value||document.getElementById('ff-monedaV')?.value||'USD').toUpperCase();
-  const ventaEnEUR=monedaVenta==='EUR'||monedaVenta==='EUROS';
+  // Leer moneda del radio selector
+  const monedaOpEl=document.querySelector('input[name="ff-monedaOp"]:checked');
+  const monedaOp=(monedaOpEl?.value||'USD').toUpperCase();
+  const ventaEnEUR=monedaOp==='EUR';
+
+  // Mostrar/ocultar tipo de cambio
+  const tcWrap=document.getElementById('tipo-cambio-wrap');
+
   if(!divisaId||cantidad<=0)return;
 
   const compras=DB.compras()
@@ -692,19 +698,34 @@ function calcFIFO(){
   const ventasAnt=DB.ventas()
     .filter(v=>v.divisaId===divisaId&&(v.cantidad||0)>0&&(!curEditId||v.id!==curEditId))
     .sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+
   const lote=compras.map(c=>({
     precio:parseFloat(c.precioUnidad)||0,
     moneda:(c.monedaCosto||c.moneda||'').toUpperCase().trim(),
-    restante:parseFloat(c.cantidad)||0
+    restante:parseFloat(c.cantidad)||0,
+    orig:parseFloat(c.cantidad)||0
   }));
+
+  // Descontar ventas anteriores
+  const totalComprado=lote.reduce((s,l)=>s+l.orig,0);
   ventasAnt.forEach(v=>{
     let por=parseFloat(v.cantidad)||0;
     for(const l of lote){if(por<=0)break;const u=Math.min(l.restante,por);l.restante-=u;por-=u;}
   });
+  const totalRestante=lote.reduce((s,l)=>s+l.restante,0);
+
+  // Fallback: si ventas anteriores vaciaron todos los lotes pero parece error de unidades
+  // (ej: BTC con cantidades en USD), usar lotes sin descontar
+  const usarSinDescontar=totalRestante<0.000001&&totalComprado>0;
+  const loteEfectivo=usarSinDescontar?compras.map(c=>({
+    precio:parseFloat(c.precioUnidad)||0,
+    moneda:(c.monedaCosto||c.moneda||'').toUpperCase().trim(),
+    restante:parseFloat(c.cantidad)||0
+  })):lote;
 
   let porAsignar=cantidad,costeFIFO=0,unidades=0;
   const loteInfo=[];
-  for(const l of lote){
+  for(const l of loteEfectivo){
     if(porAsignar<=0)break;
     if(l.restante<=0)continue;
     const u=Math.min(l.restante,porAsignar);
@@ -712,52 +733,50 @@ function calcFIFO(){
     loteInfo.push({precio:l.precio,moneda:l.moneda,usado:u});
     porAsignar-=u;
   }
+  // Si aún no hay suficientes unidades, tomar precio del primer lote disponible
+  if(unidades<=0&&loteEfectivo.length){
+    const l=loteEfectivo[0];
+    loteInfo.push({precio:l.precio,moneda:l.moneda,usado:cantidad});
+    costeFIFO=cantidad*l.precio;unidades=cantidad;
+  }
   if(unidades<=0)return;
+
   const precioMedio=costeFIFO/unidades;
   const monedaCompra=loteInfo[0]?.moneda||'';
   const compraEnEUR=monedaCompra==='EUROS'||monedaCompra==='EUR'||monedaCompra==='€';
+  const mismaMon=(compraEnEUR&&ventaEnEUR)||(!compraEnEUR&&!ventaEnEUR);
 
-  // Siempre rellenar precio de compra si está vacío
+  // Pre-rellenar precio de compra si está vacío
   const elUC=document.getElementById('ff-precioUC');
   if(elUC&&!elUC.value)elUC.value=precioMedio.toFixed(4);
   const monLabel=document.getElementById('fifo-moneda-label');
   if(monLabel)monLabel.textContent=compraEnEUR?'(€)':'($)';
 
-  // Mostrar tipo de cambio solo si compra en € y venta en $ (monedas distintas)
-  const tcWrap=document.getElementById('tipo-cambio-wrap');
+  // Mostrar tipo de cambio solo si monedas distintas (compra € venta $)
   if(tcWrap)tcWrap.style.display=(compraEnEUR&&!ventaEnEUR)?'block':'none';
 
   const totalVenta=total||(precioUV*cantidad);
   if(totalVenta<=0)return;
+
   const badge=document.getElementById('fifo-badge');
   const elGan=document.getElementById('ff-ganancia');
   const elGanEur=document.getElementById('ff-ganancia-eur');
-  const elMonGan=document.getElementById('ff-monedaGan');
 
   if(compraEnEUR&&ventaEnEUR){
-    // Ambos en € → cálculo directo en €
-    if(elGan&&!elGan.value){elGan.value=(totalVenta-(precioMedio*cantidad)).toFixed(2);}
-    if(elMonGan)elMonGan.value='EUR';
+    if(elGan&&!elGan.value)elGan.value=(totalVenta-(precioMedio*cantidad)).toFixed(2);
   } else if(compraEnEUR&&!ventaEnEUR){
-    // Compra €, venta $ → tipo de cambio opcional
     const tc=gffN('tipocambio');
-    if(tc>0&&elGanEur){
-      const ventaEur=totalVenta/tc;
-      elGanEur.value=(ventaEur-(precioMedio*cantidad)).toFixed(2);
-    }
-    if(elGan&&!elGan.value&&tc>0){
-      elGan.value=(totalVenta-(precioMedio*cantidad*tc)).toFixed(2);
-      if(elMonGan)elMonGan.value='USD';
+    if(tc>0){
+      if(elGanEur)elGanEur.value=((totalVenta/tc)-(precioMedio*cantidad)).toFixed(2);
+      if(elGan&&!elGan.value)elGan.value=(totalVenta-(precioMedio*cantidad*tc)).toFixed(2);
     }
   } else {
-    // Compra y venta en misma moneda $ → directo
-    if(elGan&&!elGan.value){elGan.value=(totalVenta-(precioMedio*cantidad)).toFixed(2);}
-    if(elMonGan)elMonGan.value=monedaVenta;
+    if(elGan&&!elGan.value)elGan.value=(totalVenta-(precioMedio*cantidad)).toFixed(2);
   }
 
   if(badge){
     const info=loteInfo.map(l=>`${fmtStock(l.usado)}u@${fmt(l.precio,4)}${compraEnEUR?'€':'$'}`).join('+');
-    badge.title=`FIFO: ${info} → P.medio: ${fmt(precioMedio,4)}`;
+    badge.title=`FIFO: ${info}${usarSinDescontar?' (⚠️ sin descontar ventas previas)':''}`;
     badge.style.display='inline';
   }
 }
