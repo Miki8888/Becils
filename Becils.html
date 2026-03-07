@@ -247,6 +247,13 @@ body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:
       <div class="chart-card"><div class="chart-title">📈 Acumulado invertido en el tiempo</div><div class="chart-wrap"><canvas id="chart-acum"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">💹 P&amp;L por operación de venta ($)</div><div class="chart-wrap" style="height:220px"><canvas id="chart-pnl"></canvas></div></div>
       <div class="chart-card"><div class="chart-title">🍩 Distribución del portfolio</div><div class="chart-wrap" style="height:240px"><canvas id="chart-portfolio"></canvas></div></div>
+      <div class="chart-card" style="padding:0;overflow:hidden">
+        <div style="padding:16px 16px 10px;display:flex;justify-content:space-between;align-items:center">
+          <div class="chart-title" style="margin:0">🧾 Resumen fiscal por año</div>
+          <span style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono'">toca para desglosar</span>
+        </div>
+        <div id="tax-accordion"></div>
+      </div>
     </div>
     <div id="sec-settings" class="section">
       <div style="font-size:18px;font-weight:800;margin-bottom:12px;padding-top:4px">Ajustes</div>
@@ -282,7 +289,7 @@ body{font-family:'Syne',sans-serif;color:var(--text);font-size:15px;line-height:
       <div class="card" style="text-align:center;padding:24px">
         <div style="font-size:36px;margin-bottom:10px">₿</div>
         <div style="font-weight:800;font-size:18px;background:linear-gradient(135deg,#F59E0B,#FCD34D);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">BECILS Crypto</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v3.4 · Datos locales</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">Tracker v3.5 · Datos locales</div>
         <div style="font-size:11px;color:var(--text3);margin-top:12px;font-family:'JetBrains Mono'" id="db-stats">Sin datos</div>
       </div>
     </div>
@@ -663,7 +670,7 @@ function toggleMG(id){const b=document.getElementById(id),c=document.getElementB
 let charts={};
 function destroyCharts(){Object.values(charts).forEach(c=>{try{c.destroy();}catch{}});charts={};}
 function renderStats(){
-  destroyCharts();renderInvestAccordion();
+  destroyCharts();renderInvestAccordion();renderTaxAccordion();
   const gastos=DB.gastos().filter(g=>g.fecha&&g.euros>0).sort((a,b)=>a.fecha.localeCompare(b.fecha));
   const ventas=DB.ventas().filter(v=>v.fecha&&v.ganancia!=null&&(v.operacion==='VENTA'||!v.operacion));
   const divisas=DB.divisas();
@@ -673,9 +680,86 @@ function renderStats(){
   if(acumData.length){charts.acum=new Chart(document.getElementById('chart-acum'),{type:'line',data:{datasets:[{data:acumData,borderColor:'#F59E0B',backgroundColor:'rgba(245,158,11,0.08)',borderWidth:2,pointRadius:2,fill:true,tension:0.4,label:'Invertido €'}]},options:{...bOpts,parsing:{xAxisKey:'x',yAxisKey:'y'},scales:{...bOpts.scales,y:{...bOpts.scales.y,ticks:{...bOpts.scales.y.ticks,callback:v=>v+'€'}}}}});}
   const topV=ventas.slice(-20).map(v=>({label:getDivNombre(v.divisaId).substr(0,8),val:v.ganancia}));
   if(topV.length){charts.pnl=new Chart(document.getElementById('chart-pnl'),{type:'bar',data:{labels:topV.map(v=>v.label),datasets:[{data:topV.map(v=>v.val),backgroundColor:topV.map(v=>v.val>=0?'rgba(16,185,129,0.7)':'rgba(239,68,68,0.7)'),borderRadius:4}]},options:{...bOpts,scales:{...bOpts.scales,y:{...bOpts.scales.y,ticks:{...bOpts.scales.y.ticks,callback:v=>v+'$'}}}}});}
-  const withStock=divisas.filter(d=>d.stock>0);
+  // Calcular stockMap igual que renderPortfolio
+  const comprasAll=DB.compras(),ventasAll=DB.ventas();
+  const stockMapS={};
+  divisas.forEach(d=>{
+    const excelStock=parseFloat(d.stock)||0;
+    const comp=comprasAll.filter(c=>c.divisaId===d.id).reduce((s,c)=>s+(parseFloat(c.cantidad)||0),0);
+    const vend=ventasAll.filter(v=>v.divisaId===d.id).reduce((s,v)=>s+(parseFloat(v.cantidad)||0),0);
+    if(comp===0){stockMapS[d.id]=excelStock;}
+    else if(vend>comp*2){stockMapS[d.id]=excelStock>0?excelStock:0;}
+    else{const calc=comp-vend;stockMapS[d.id]=calc>0.000001?calc:0;}
+  });
+  const withStock=divisas.filter(d=>stockMapS[d.id]>0);
   const colors=['#F59E0B','#10B981','#3B82F6','#8B5CF6','#EF4444','#EC4899','#14B8A6','#F97316','#06B6D4','#84CC16'];
   if(withStock.length){charts.port=new Chart(document.getElementById('chart-portfolio'),{type:'doughnut',data:{labels:withStock.map(d=>d.nombre),datasets:[{data:withStock.map(()=>1),backgroundColor:withStock.map((d,i)=>cm(d.nombre).c||colors[i%colors.length]),borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:true,position:'right',labels:{color:tc,font:{family:'Syne',size:11},padding:8,boxWidth:12}}}}});}
+}
+function renderTaxAccordion(){
+  const ventas=DB.ventas().filter(v=>v.fecha&&(v.operacion==='VENTA'||!v.operacion||v.operacion===''));
+  const el=document.getElementById('tax-accordion');
+  if(!ventas.length){el.innerHTML='<div style="padding:16px;color:var(--text2);font-size:13px;text-align:center">Sin ventas registradas</div>';return;}
+  const byYear={};
+  ventas.forEach(v=>{
+    const y=v.fecha.substr(0,4);
+    if(!byYear[y])byYear[y]=[];
+    byYear[y].push(v);
+  });
+  const years=Object.keys(byYear).sort((a,b)=>b-a);
+  const curY=new Date().getFullYear().toString();
+  const html=years.map(y=>{
+    const vs=byYear[y];
+    const totalGan=vs.reduce((s,v)=>s+(parseFloat(v.ganancia)||0),0);
+    const totalRec=vs.reduce((s,v)=>s+(parseFloat(v.totalOperacion)||0),0);
+    const aid='tax-'+y;
+    const rowsHtml=vs.sort((a,b)=>a.fecha.localeCompare(b.fecha)).map(v=>{
+      const gan=parseFloat(v.ganancia)||0;
+      const rec=parseFloat(v.totalOperacion)||0;
+      return`<div style="display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:12px">${getDivNombre(v.divisaId)}</div>
+          <div style="font-size:10px;color:var(--text3)">${fmtDS(v.fecha)} · ${fmtStock(v.cantidad||0)} uds</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:'JetBrains Mono';font-size:11px">${fmt(rec,2)} $</div>
+          <div style="font-size:11px;font-weight:700;color:${gan>=0?'var(--green)':'var(--red)'}">${gan>=0?'+':''}${fmt(gan,2)} $</div>
+        </div>
+      </div>`;
+    }).join('');
+    const exportBtn=`<button onclick="exportTaxCSV('${y}')" style="font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid var(--amber);background:var(--amber-dim);color:var(--amber);font-family:'Syne';font-weight:700;cursor:pointer;margin-left:8px">⬇️ CSV</button>`;
+    return`<div class="acc-year">
+      <div class="acc-year-header" onclick="toggleAcc('${aid}')">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="acc-year-label">${y}</span>
+          <span class="acc-year-badge" style="background:${totalGan>=0?'var(--green-dim)':'var(--red-dim)'};color:${totalGan>=0?'var(--green)':'var(--red)'}">${totalGan>=0?'+':''}${fmt(totalGan,2)} $</span>
+          <span style="font-size:10px;color:var(--text3)">${vs.length} ventas</span>
+        </div>
+        <div style="display:flex;align-items:center">${exportBtn}<span class="acc-chevron" id="chev-${aid}">▼</span></div>
+      </div>
+      <div class="acc-body" id="${aid}">
+        <div style="padding:10px 16px;background:var(--card2);display:flex;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--border)">
+          <div><div style="font-size:10px;color:var(--text3)">TOTAL RECUPERADO</div><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700">${fmt(totalRec,2)} $</div></div>
+          <div><div style="font-size:10px;color:var(--text3)">GANANCIA NETA</div><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700;color:${totalGan>=0?'var(--green)':'var(--red)'}">${totalGan>=0?'+':''}${fmt(totalGan,2)} $</div></div>
+          <div><div style="font-size:10px;color:var(--text3)">OPERACIONES</div><div style="font-family:'JetBrains Mono';font-size:13px;font-weight:700">${vs.length}</div></div>
+        </div>
+        ${rowsHtml}
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML=html;
+  if(byYear[curY])toggleAcc('tax-'+curY);
+}
+function exportTaxCSV(year){
+  const ventas=DB.ventas().filter(v=>v.fecha&&v.fecha.startsWith(year)&&(v.operacion==='VENTA'||!v.operacion||v.operacion===''));
+  if(!ventas.length){toast('Sin ventas en '+year);return;}
+  const rows=[['Fecha','Divisa','Cantidad','P.Compra ($)','P.Venta ($)','Total ($)','Ganancia ($)','Exchange']];
+  ventas.sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(v=>{
+    rows.push([v.fecha,getDivNombre(v.divisaId),v.cantidad||0,v.precioUCompra||0,v.precioUVenta||0,v.totalOperacion||0,v.ganancia||0,getExchName(v.exchangeId)]);
+  });
+  const csv=rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`BECILS_Tax_${year}.csv`;a.click();
+  toast(`✅ CSV ${year} descargado`);
 }
 function renderInvestAccordion(){
   const gastos=DB.gastos().filter(g=>g.fecha&&g.euros>0);
